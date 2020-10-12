@@ -33,15 +33,6 @@ public class Renderer2 {
     @SuppressWarnings("deprecation")
     public void beginDrawing(Canvas canvas, int screenColor, int viewportColor) {
         mTempCanvas = canvas;
-        mTempCanvas.drawColor(screenColor);
-        if (mViewport != null) {
-            if (Build.VERSION.SDK_INT < 26) {
-                canvas.clipRect(mViewport.getDrawingArea(), Region.Op.REPLACE);
-            } else {
-                canvas.clipOutRect(mViewport.getDrawingArea());
-            }
-            canvas.drawColor(viewportColor);
-        }
     }
 
     public void drawBackgroundImage(Image image) {
