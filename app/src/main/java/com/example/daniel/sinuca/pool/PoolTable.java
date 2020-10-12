@@ -11,6 +11,11 @@ import java.util.ArrayList;
  */
 
 public class PoolTable {
+    public static final int         STATE_STARTED = 0;
+    public static final int         STATE_AIMING = 1;
+    public static final int         STATE_MOVING = 2;
+    public static final int         STATE_GAME_OVER = 3;
+
     public static final float       BALL_RADIUS = 16.0f;
     public static final float       POCKET_RADIUS = 40.0f;
     public static final float       COR = 0.98f; // Coefficient of Restitution
@@ -23,6 +28,8 @@ public class PoolTable {
     private boolean                 mBallWasHit;
     private boolean                 mWillBePocketed;
     private float                   mDistanceWhenHit;
+    private int                     mCurrentState;
+    private float                   mTimer = 0;
 
     private PoolBallManager         mBallManager;
     private PoolBall                mWhiteBall;
@@ -30,8 +37,8 @@ public class PoolTable {
     private ArrayList<Wall>         mWallList = new ArrayList<Wall>();
     private ArrayList<PoolPocket>   mPocketList = new ArrayList<PoolPocket>();
     private PoolBall                mDeletedBall;
+    private boolean                 mWhiteBallDeleted;
     private CueStick                mStick;
-    private boolean                 mWaiting;
 
     public PoolTable(Point dimensions) {
         mDimensions = new Point(dimensions);
@@ -40,6 +47,7 @@ public class PoolTable {
     }
 
     public void setup() {
+        mCurrentState = STATE_STARTED;
         mWhiteBall = mBallManager.createBall(new PointF(795, 300), BALL_RADIUS, Color.WHITE, 0);
         mBallManager.createBall(new PointF(300, 300), BALL_RADIUS, Color.YELLOW, 1);
         mBallManager.createBall(new PointF(272.28f, 284), BALL_RADIUS, Color.BLUE, 2);
@@ -93,25 +101,36 @@ public class PoolTable {
         {
             elapsedTimeInSeconds = 0.1f;
         }
-        if (mDeletedBall != null) {
-            if (mDeletedBall == mWhiteBall) {
-                if (!mWaiting) {
-                    mBallManager.deleteBall(mDeletedBall);
-                    mWaiting = true;
-                }
-                if (hasNoMovement()) {
-                    mBallManager.addBall(mWhiteBall);
-                    mWhiteBall.setPosition(795, 300);
-                    mWhiteBall.setVelocity(0, 0);
-                    mWaiting = false;
-                    mDeletedBall = null;
-                }
+        if(mCurrentState == STATE_STARTED) {
+            if (mWhiteBallDeleted == true) {
+                mBallManager.addBall(mWhiteBall);
+                mWhiteBall.setPosition(795, 300);
+                mWhiteBall.setVelocity(0, 0);
+                mWhiteBallDeleted = false;
+            }
 
-            } else {
+        } else if(mCurrentState == STATE_AIMING) {
+
+        } else if(mCurrentState == STATE_MOVING) {
+            if (mDeletedBall != null) {
+                if (mDeletedBall == mWhiteBall) {
+                    mWhiteBallDeleted = true;
+                }
                 mBallManager.deleteBall(mDeletedBall);
                 mDeletedBall = null;
             }
+            mTimer += elapsedTimeInSeconds;
+            if (mTimer > 1) {
+                if (hasNoMovement()) {
+                    mCurrentState = STATE_STARTED;
+                }
+                mTimer = 0;
+            }
+
+        } else{ // (mCurrentState == STATE_GAME_OVER)
+
         }
+
         for (PoolBall ball : mBallManager.getBallList()) {
             ball.getPosition().set(
                     ball.getPosition().x + ball.getVelocity().x * elapsedTimeInSeconds,
@@ -255,6 +274,7 @@ public class PoolTable {
     public void startMoving() {
         mWhiteBall.setVelocity(mTempStickDirection.x * mDistanceWhenHit * 16,
                 mTempStickDirection.y * mDistanceWhenHit * 16);
+        mCurrentState = STATE_MOVING;
         mBallWasHit = false;
     }
 
@@ -310,6 +330,7 @@ public class PoolTable {
     public void setBallWasHit(boolean ballWasHit) {
         mBallWasHit = ballWasHit;
     }
+    public void setCurrentState(int currentState) { mCurrentState = currentState; }
     public PointF getTempVelocityDirection() {
         return mTempStickDirection;
     }
